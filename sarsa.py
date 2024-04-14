@@ -33,8 +33,8 @@ def digitize_state(observation):
     # 0~255に変換
     return sum([x * (4 ** i) for i, x in enumerate(digitized)])
 
-def q_learning(state, action, next_state, alpha, r, gamma):
-    q_table[state, action] = q_table[state, action] + alpha * (r + gamma * np.max(q_table[next_state]) - q_table[state, action])
+def sarsa(state, action, next_state, next_action, alpha, r, gamma):
+    q_table[state, action] = q_table[state, action] + alpha * (r + gamma * q_table[next_state, next_action] - q_table[state, action])
 
 frames = []
 gamma = 0.99
@@ -54,13 +54,17 @@ for episode in range(max_episodes):
     screen = env.render()
     frames.append(screen)
     episode_reward = 0
+
+    if np.random.uniform(0,1) > epsilon:
+        action = np.argmax(q_table[state])
+    else:
+        action = env.action_space.sample()
+
+
     for step in range(max_steps):
         
         # decide action with epsilon-greedy
-        if np.random.uniform(0,1) > epsilon:
-            action = np.argmax(q_table[state])
-        else:
-            action = env.action_space.sample()
+        
         # get next step env
         next_observation, reward, terminated, _, _ = env.step(action)
         # print("reward: {}, terminated: {}".format(reward, terminated))
@@ -81,15 +85,21 @@ for episode in range(max_episodes):
         # convert digitize
         next_state = digitize_state(next_observation)
 
-        # q_learning
-        q_learning(state, action, next_state, alpha, reward, gamma)
+        if np.random.uniform(0,1) > epsilon:
+            next_action = np.argmax(q_table[next_state])
+        else:
+            next_action = env.action_space.sample()
+
+        # sarsa
+        sarsa(state, action, next_state, next_action, alpha, reward, gamma)
         state = next_state
+        action = next_action
         
         if episode == max_episodes-1:
             imgs.append(env.render())
             screen = env.render()
             frames.append(screen)
-            episode_filename= "q-learning" + str(episode) + ".gif"
+            episode_filename= "sarsa" + str(episode) + ".gif"
             save_gif(imgs, episode_filename)
             IImage(filename=episode_filename)
 
@@ -102,16 +112,3 @@ plt.xlabel("episode")
 plt.ylabel("reward")
 plt.show()
 env.close()
-
-
-# import matplotlib.animation as animation
-# import matplotlib.pyplot as plt
-
-
-# plt.figure(figsize=(frames[0].shape[1]/72.0, frames[0].shape[0]/72.0), dpi=72)
-# patch = plt.imshow(frames[0])
-# plt.axis('off')
-# def animate(i):
-#     patch.set_data(frames[i])
-# anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
-# HTML(anim.to_jshtml())
