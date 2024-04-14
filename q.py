@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 env = gym.make("CartPole-v1", render_mode="rgb_array")
 
+q_table = np.random.uniform(0,1,(255,env.action_space.n))
+
 def save_gif(rgb_arrays, filename, duration=60):
     frames = []
 
@@ -15,8 +17,6 @@ def save_gif(rgb_arrays, filename, duration=60):
         frames.append(img)
 
     frames[0].save(filename, save_all=True, append_images=frames[1:], duration=duration, loop=0)
-
-q_table = np.random.uniform(0,1,(255,env.action_space.n))
 
 def bins(clip_min, clip_max, num):
     return np.linspace(clip_min, clip_max, num + 1)[1:-1]
@@ -41,62 +41,63 @@ gamma = 0.99
 alpha = 0.1
 epsilon = 0.001
 rewards = []
-max_episodes = 100
-max_steps = 300
+max_episodes = 300
+max_steps = 200
 
 for episode in range(max_episodes):
-    print("episode ", episode)
     observation = env.reset()
 
     state = digitize_state(observation[0])
-
     
     imgs = [env.render()]
     
     screen = env.render()
     frames.append(screen)
-    total_reward = 0
+    episode_reward = 0
     for step in range(max_steps):
         
-        # decide action base on q_table
-        tmp = np.random.default_rng().random()
-        if tmp > epsilon:
+        # decide action with epsilon-greedy
+        if np.random.uniform(0,1) > epsilon:
             action = np.argmax(q_table[state])
         else:
-            # print("random action")
             action = env.action_space.sample()
         # get next step env
         next_observation, reward, terminated, _, _ = env.step(action)
+        # print("reward: {}, terminated: {}".format(reward, terminated))
         
-
+        # 300stepまで行う
+        # もし途中でepisodeが終わってしまった場合は
+        # その時点のstep数が295以下だった場合失敗とみなして-1を報酬として受け取る
+        # それ以上だった場合はそのエピソードは成功とみなして+1を報酬として受け取る
         if terminated:
-            if step < 295:
-                reward = -1
+            if step < 195:
+                reward = -100
             else:
                 reward = 1
         else:
-            reward = 0
-        
+            reward = 1
+
+        episode_reward += reward
         # convert digitize
         next_state = digitize_state(next_observation)
 
         # q_learning
         q_learning(state, action, next_state, alpha, reward, gamma)
         state = next_state
-
-        # if step == max_steps-1:
-        #     rewards.append(total_reward)
-        #     # print("episode{} finished ofter {} timesteps, total reward {}".format(episode, step+1, total_reward))
-        #     break
         
-        imgs.append(env.render())
-        screen = env.render()
-        frames.append(screen)
         if episode == max_episodes-1:
+            imgs.append(env.render())
+            screen = env.render()
+            frames.append(screen)
             episode_filename= "pend_td" + str(episode) + ".gif"
             save_gif(imgs, episode_filename)
             IImage(filename=episode_filename)
-plt.plot(np.arange(100), rewards)
+
+        if terminated or step == max_steps-1:
+            rewards.append(episode_reward)
+            # print("episode{} finished ofter {} timesteps, total reward {}".format(episode, step+1, total_reward))
+            break
+plt.plot(np.arange(max_episodes), rewards)
 plt.xlabel("episode")
 plt.ylabel("reward")
 plt.show()
