@@ -33,15 +33,23 @@ def digitize_state(observation):
     # 0~255に変換
     return sum([x * (4 ** i) for i, x in enumerate(digitized)])
 
-def sarsa(state, action, next_state, next_action, alpha, r, gamma):
+def decide_action(step, state):
+    if np.random.uniform(0,1) > (epsilon / (step+1)):
+        action = np.argmax(q_table[state])
+    else:
+        action = env.action_space.sample()
+
+    return action
+
+def sarsa(state, action, next_state, next_action, r):
+    gamma = 0.99
+    alpha = 0.1
     q_table[state, action] = q_table[state, action] + alpha * (r + gamma * q_table[next_state, next_action] - q_table[state, action])
 
 frames = []
-gamma = 0.99
-alpha = 0.1
-epsilon = 0.001
+epsilon = 0.1
 rewards = []
-max_episodes = 300
+max_episodes = 500
 max_steps = 200
 
 for episode in range(max_episodes):
@@ -55,19 +63,12 @@ for episode in range(max_episodes):
     frames.append(screen)
     episode_reward = 0
 
-    if np.random.uniform(0,1) > epsilon:
-        action = np.argmax(q_table[state])
-    else:
-        action = env.action_space.sample()
-
+    action = decide_action(1, state)
 
     for step in range(max_steps):
-        
-        # decide action with epsilon-greedy
-        
+
         # get next step env
         next_observation, reward, terminated, _, _ = env.step(action)
-        # print("reward: {}, terminated: {}".format(reward, terminated))
         
         # 300stepまで行う
         # もし途中でepisodeが終わってしまった場合は
@@ -91,7 +92,7 @@ for episode in range(max_episodes):
             next_action = env.action_space.sample()
 
         # sarsa
-        sarsa(state, action, next_state, next_action, alpha, reward, gamma)
+        sarsa(state, action, next_state, next_action, reward)
         state = next_state
         action = next_action
         

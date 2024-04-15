@@ -33,16 +33,26 @@ def digitize_state(observation):
     # 0~255に変換
     return sum([x * (4 ** i) for i, x in enumerate(digitized)])
 
-def q_learning(state, action, next_state, alpha, r, gamma):
+def decide_action(step, state):
+    if np.random.uniform(0,1) > (epsilon / (step+1)):
+        action = np.argmax(q_table[state])
+    else:
+        action = env.action_space.sample()
+
+    return action
+
+
+def q_learning(state, action, next_state, r):
+    alpha = 0.1
+    gamma = 0.99
     q_table[state, action] = q_table[state, action] + alpha * (r + gamma * np.max(q_table[next_state]) - q_table[state, action])
 
 frames = []
-gamma = 0.99
-alpha = 0.1
-epsilon = 0.001
+epsilon = 0.1
 rewards = []
-max_episodes = 300
+max_episodes = 500
 max_steps = 200
+max_successed_episodes = 100
 
 for episode in range(max_episodes):
     observation = env.reset()
@@ -57,18 +67,15 @@ for episode in range(max_episodes):
     for step in range(max_steps):
         
         # decide action with epsilon-greedy
-        if np.random.uniform(0,1) > epsilon:
-            action = np.argmax(q_table[state])
-        else:
-            action = env.action_space.sample()
+        action = decide_action(step, state)
         # get next step env
         next_observation, reward, terminated, _, _ = env.step(action)
         # print("reward: {}, terminated: {}".format(reward, terminated))
         
-        # 300stepまで行う
+        # (max_steps) stepまで行う
         # もし途中でepisodeが終わってしまった場合は
-        # その時点のstep数が295以下だった場合失敗とみなして-1を報酬として受け取る
-        # それ以上だった場合はそのエピソードは成功とみなして+1を報酬として受け取る
+        # その時点のstep数が(max_steps - 5)以下だった場合失敗とみなして-100を報酬として受け取る
+        # step数がそれ以上だった場合はそのエピソードは成功とみなして+1を報酬として受け取る
         if terminated:
             if step < 195:
                 reward = -100
@@ -82,7 +89,7 @@ for episode in range(max_episodes):
         next_state = digitize_state(next_observation)
 
         # q_learning
-        q_learning(state, action, next_state, alpha, reward, gamma)
+        q_learning(state, action, next_state, reward)
         state = next_state
         
         if episode == max_episodes-1:
