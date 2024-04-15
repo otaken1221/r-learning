@@ -14,14 +14,9 @@
 ### Episode成功条件
 - max_steps数-5よりも先のstepでPoleが立ち続けていた場合
 ### パラメータ
-- $\varepsilon$-greedy法の $\varepsilon$値
-    - 0.5
-- 最大エピソード数 max_episodes
-    - 500
-- 最大ステップ数 max_steps
-    - 200
-- 学習率 $\alpha$
-    - 0.1
-- 割引率 $\gamma$
-    - 0.99
-
+| パラメータ名 | 値 |
+| ---- | ---- |
+| $\varepsilon$-greedy法の $\varepsilon$値 | 0.5 |
+| 最大エピソード数 max_episodes | 500 |
+| 最大ステップ数 max_steps | 200 |
+| 学習率 $\alpha$ | 0.1 |
