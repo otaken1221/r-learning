@@ -3,6 +3,7 @@ from PIL import Image
 from IPython.display import Image as IImage
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 env = gym.make("CartPole-v1", render_mode="rgb_array")
 
@@ -15,7 +16,7 @@ def save_gif(rgb_arrays, filename, duration=60):
         rgb_array = (rgb_array).astype(np.uint8)
         img = Image.fromarray(rgb_array)
         frames.append(img)
-
+        
     frames[0].save(filename, save_all=True, append_images=frames[1:], duration=duration, loop=0)
 
 def bins(clip_min, clip_max, num):
@@ -33,8 +34,8 @@ def digitize_state(observation):
     # 0~255に変換
     return sum([x * (4 ** i) for i, x in enumerate(digitized)])
 
-def decide_action(step, state):
-    if np.random.uniform(0,1) > (epsilon / (step+1)):
+def decide_action(episode, state):
+    if np.random.uniform(0,1) > (epsilon / ((episode + 1)**2)):
         action = np.argmax(q_table[state])
     else:
         action = env.action_space.sample()
@@ -43,7 +44,7 @@ def decide_action(step, state):
 
 
 def q_learning(state, action, next_state, r):
-    alpha = 0.1
+    alpha = 0.5
     gamma = 0.99
     q_table[state, action] = q_table[state, action] + alpha * (r + gamma * np.max(q_table[next_state]) - q_table[state, action])
 
@@ -51,8 +52,9 @@ frames = []
 epsilon = 0.1
 rewards = []
 max_episodes = 500
-max_steps = 200
-max_successed_episodes = 100
+max_steps = env.spec.max_episode_steps
+successed_episodes = 0
+imgs = []
 
 for episode in range(max_episodes):
     observation = env.reset()
@@ -62,30 +64,32 @@ for episode in range(max_episodes):
     imgs = [env.render()]
     
     screen = env.render()
-    frames.append(screen)
     episode_reward = 0
     for step in range(max_steps):
         
-        # decide action with epsilon-greedy
-        action = decide_action(step, state)
-        # get next step env
+        # epsilon-greedy法により行動を決定
+        action = decide_action(episode, state)
+        # 次の状態を獲得
         next_observation, reward, terminated, _, _ = env.step(action)
         # print("reward: {}, terminated: {}".format(reward, terminated))
         
-        # (max_steps) stepまで行う
-        # もし途中でepisodeが終わってしまった場合は
-        # その時点のstep数が(max_steps - 5)以下だった場合失敗とみなして-100を報酬として受け取る
-        # step数がそれ以上だった場合はそのエピソードは成功とみなして+1を報酬として受け取る
+        # 報酬獲得
+
         if terminated:
-            if step < 195:
+            # print("terminated {} episode in {} step".format(episode+1, step+1))
+            if step < max_steps-5:
                 reward = -100
             else:
+                # print("{} episode successed".format(episode + 1))
+                successed_episodes += 1
                 reward = 1
         else:
             reward = 1
+        
+        
 
         episode_reward += reward
-        # convert digitize
+        # 状態を離散値に変換
         next_state = digitize_state(next_observation)
 
         # q_learning
@@ -96,29 +100,24 @@ for episode in range(max_episodes):
             imgs.append(env.render())
             screen = env.render()
             frames.append(screen)
-            episode_filename= "q-learning" + str(episode) + ".gif"
-            save_gif(imgs, episode_filename)
-            IImage(filename=episode_filename)
+            episode_filename= "./q-learning/q-learning" + str(episode) + ".gif"
 
         if terminated or step == max_steps-1:
             rewards.append(episode_reward)
             # print("episode{} finished ofter {} timesteps, total reward {}".format(episode, step+1, total_reward))
             break
+
+print("successed {} / {} episodes".format(successed_episodes, max_episodes))
 plt.plot(np.arange(max_episodes), rewards)
+plt.title("Q-learning")
 plt.xlabel("episode")
 plt.ylabel("reward")
-plt.show()
+plt.savefig("./q-learning/q-learnig.png")
+
+print("rendering..")
+for i in tqdm(range(len(imgs))):
+    save_gif(imgs[:i+1], episode_filename)
+    IImage(filename=episode_filename)
+    
+
 env.close()
-
-
-# import matplotlib.animation as animation
-# import matplotlib.pyplot as plt
-
-
-# plt.figure(figsize=(frames[0].shape[1]/72.0, frames[0].shape[0]/72.0), dpi=72)
-# patch = plt.imshow(frames[0])
-# plt.axis('off')
-# def animate(i):
-#     patch.set_data(frames[i])
-# anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
-# HTML(anim.to_jshtml())
