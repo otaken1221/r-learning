@@ -127,11 +127,12 @@ class reinforcement_learning:
                     imgs.append(env.render())
 
                 if terminated or step == max_steps-1:
+                    env.reset()
                     rewards.append(episode_reward)
                     break
         
         self.plot(rewards, "q-learning")
-        # self.render(imgs, episode_filename)
+        self.render(imgs, episode_filename)
     
     def run_SARSA(self, task):
         env = gym.make(task, render_mode="rgb_array")
@@ -183,11 +184,13 @@ class reinforcement_learning:
                 action = next_action
                 
                 if episode == self.max_episodes-1:
+                    
                     imgs.append(env.render())
                     # screen = env.render()
 
                 if terminated or step == max_steps-1:
                     rewards.append(episode_reward)
+                    env.reset()
                     # print("episode{} finished ofter {} timesteps, total reward {}".format(episode, step+1, total_reward))
                     break
         self.plot(rewards, "sarsa")
