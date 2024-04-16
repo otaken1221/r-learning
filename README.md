@@ -12,12 +12,12 @@
     <!-- - Episode成功規定step数まで立っている場合 +1 -->
     - Episode成功規定step数より小さいstep数でPoleが倒れた場合 -100
 ### Episode成功条件
-- max_steps数-5よりも先のstepでPoleが立ち続けていた場合
+- (max_steps)stepでPoleが立っていた場合
 ### パラメータ
 | パラメータ名 | 値 |
 | ---- | ---- |
 | $\varepsilon$-greedy法の $\varepsilon$値 | 0.5 |
-| 最大エピソード数 max_episodes | 800 |
-| 最大ステップ数 max_steps | 500 |
+| 最大エピソード数 max_episodes | 200 |
+| 最大ステップ数 max_steps | env.spec.max_episode_steps |
 | 学習率 $\alpha$ | 0.5 |
 | 割引率 $\gamma$ | 0.99 |
