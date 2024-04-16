@@ -4,13 +4,14 @@ from IPython.display import Image as IImage
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from gymnasium.wrappers import RecordVideo 
 
 class reinforcement_learning:
     def __init__(self):
         self.epsilon = 0.5
-        self.alpha = 0.1
+        self.alpha = 0.5
         self.gamma = 0.99
-        self.max_episodes = 200
+        self.max_episodes = 300
         # self.max_steps = env.spec.max_episode_steps
         self.successed_episode = 0
     
@@ -33,14 +34,18 @@ class reinforcement_learning:
         env_highs = env.observation_space.high
 
         digitized = []
-        for i, observation in enumerate(observations):
-            digitized.append(np.digitize(observation, bins=self.bins(env_lows[i], env_highs[i], 4)))
-        # digitized = [
-        #     np.digitize(cart_pos, bins=self.bins(-2.4, 2.4, 4)),
-        #     np.digitize(cart_v, bins=self.bins(-3.0, 3.0, 4)),
-        #     np.digitize(pole_angle, bins=self.bins(-0.5, 0.5, 4)),
-        #     np.digitize(pole_v, bins=self.bins(-2.0, 2.0, 4))
-        #             ]
+        cart_pos = observations[0]
+        cart_v = observations[1]
+        pole_angle = observations[2]
+        pole_v = observations[3]
+        # for i, observation in enumerate(observations):
+        #     digitized.append(np.digitize(observation, bins=self.bins(env_lows[i], env_highs[i], 4)))
+        digitized = [
+            np.digitize(cart_pos, bins=self.bins(-2.4, 2.4, 4)),
+            np.digitize(cart_v, bins=self.bins(-3.0, 3.0, 4)),
+            np.digitize(pole_angle, bins=self.bins(-0.5, 0.5, 4)),
+            np.digitize(pole_v, bins=self.bins(-2.0, 2.0, 4))
+                    ]
         # 0~255に変換
         return sum([x * (4 ** i) for i, x in enumerate(digitized)])
     
@@ -77,9 +82,10 @@ class reinforcement_learning:
     def run_Q_learing(self, task):
         env = gym.make(task, render_mode="rgb_array")
         q_table = np.random.uniform(0,1,(255,env.action_space.n))
-        max_steps = env.spec.max_episode_steps
+        max_steps = 200
         imgs = []
         rewards = []
+        successed_episodes = 0
         for episode in range(self.max_episodes):
             observation = env.reset()
             episode_filename = "./q-learning/q-learning" + str(episode + 1) + ".gif"
@@ -115,6 +121,9 @@ class reinforcement_learning:
                 state = next_state
                 
                 if episode == self.max_episodes-1:
+
+                    # env = gym.wrappers.RecordVideo(env, video_folder="./", episode_trigger=True, disable_logger=True)
+
                     imgs.append(env.render())
 
                 if terminated or step == max_steps-1:
@@ -122,14 +131,15 @@ class reinforcement_learning:
                     break
         
         self.plot(rewards, "q-learning")
-        self.render(imgs, episode_filename)
+        # self.render(imgs, episode_filename)
     
     def run_SARSA(self, task):
         env = gym.make(task, render_mode="rgb_array")
         q_table = np.random.uniform(0,1,(255,env.action_space.n))
-        max_steps = env.spec.max_episode_steps
+        max_steps = 200
         imgs = []
         rewards = []
+        successed_episodes = 0
         for episode in range(self.max_episodes):
             observation = env.reset()
 
