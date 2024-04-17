@@ -17,7 +17,7 @@
 | パラメータ名 | 値 |
 | ---- | ---- |
 | $\varepsilon$-greedy法の $\varepsilon$値 | 0.5 |
-| 最大エピソード数 max_episodes | 200 |
+| 最大エピソード数 max_episodes | 2000 |
 | 最大ステップ数 max_steps | env.spec.max_episode_steps |
 | 学習率 $\alpha$ | 0.5 |
 | 割引率 $\gamma$ | 0.99 |
